@@ -1,13 +1,21 @@
 package com.excuta.musictagger
 
 import android.Manifest
+import android.annotation.SuppressLint
+import android.app.Activity
+import android.app.RecoverableSecurityException
+import android.content.ContentUris
+import android.content.ContentValues
+import android.content.Intent
 import android.database.Cursor
-import android.graphics.Color
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.view.Menu
 import android.view.MenuItem
 import android.view.MotionEvent
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
 import androidx.loader.app.LoaderManager
@@ -20,15 +28,72 @@ import com.excuta.musictagger.song.Song
 import com.excuta.musictagger.song.SongAdapter
 import io.reactivex.rxjava3.core.BackpressureStrategy
 import io.reactivex.rxjava3.core.Flowable
-import jp.wasabeef.recyclerview.animators.ScaleInRightAnimator
+import jp.wasabeef.recyclerview.animators.FadeInAnimator
+import jp.wasabeef.recyclerview.animators.LandingAnimator
+import jp.wasabeef.recyclerview.animators.SlideInRightAnimator
 import kotlinx.android.synthetic.main.activity_main.*
 
 
 class MainActivity : AppCompatActivity(), LoaderManager.LoaderCallbacks<Cursor> {
 
-    private val adapter = SongAdapter() {
+    var pending: Song? = null
 
+    private val adapter = SongAdapter() {
+        update(it)
     }
+
+    private val REQUEST = 55
+
+    private fun update(it: Song) {
+        val musicUri: Uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            try {
+                updateSong(ContentUris.withAppendedId(musicUri, it.id), it)
+            } catch (ex: RecoverableSecurityException) {
+                pending = it
+                startIntentSenderForResult(
+                    ex.userAction.actionIntent.intentSender,
+                    REQUEST,
+                    null,
+                    0,
+                    0,
+                    0,
+                    null
+                )
+            }
+        } else {
+            updateSong(musicUri, it)
+        }
+    }
+
+    @SuppressLint("InlinedApi")
+    private fun updateSong(uri: Uri, it: Song) {
+        val currentTitle = MediaStore.Audio.Media.TITLE
+
+        val values = ContentValues()
+        values.put(MediaStore.Audio.Media.IS_PENDING, 1)
+        contentResolver.update(uri, values, null, null)
+
+        values.clear()
+        values.put(MediaStore.Audio.Media.IS_PENDING, 0)
+        val newTitle = if (it.title.contains("~")) it.title.replace("~", "") else it.title + "~"
+        values.put(currentTitle, newTitle)
+
+        Toast.makeText(
+            this, contentResolver.update(
+                uri,
+                values,
+                null,
+                null
+            ).toString(), Toast.LENGTH_SHORT
+        ).show()
+        val indexOf = adapter.indexOf(it)
+        adapter.update(HashMap<Int, Song>().apply {
+            put(indexOf, it.copy(title = newTitle))
+        })
+    }
+
     private lateinit var permissionFragment: PermissionFragment
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,6 +102,10 @@ class MainActivity : AppCompatActivity(), LoaderManager.LoaderCallbacks<Cursor> 
         initRecycler()
         initPermissionFragment()
         scanClickListener()
+        initScroller()
+    }
+
+    private fun initScroller() {
         scroller.setOnTouchListener { v, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
@@ -81,7 +150,13 @@ class MainActivity : AppCompatActivity(), LoaderManager.LoaderCallbacks<Cursor> 
     private fun initRecycler() {
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
-        recyclerView.itemAnimator = ScaleInRightAnimator()
+        recyclerView.itemAnimator = LandingAnimator()
+        recyclerView.itemAnimator!!.apply {
+            addDuration = 250
+            changeDuration = 250
+            removeDuration = 250
+            moveDuration = 250
+        }
     }
 
 
@@ -178,4 +253,10 @@ class MainActivity : AppCompatActivity(), LoaderManager.LoaderCallbacks<Cursor> 
         return true
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (resultCode == Activity.RESULT_OK && requestCode == REQUEST) {
+            update(pending!!)
+        }
+    }
 }

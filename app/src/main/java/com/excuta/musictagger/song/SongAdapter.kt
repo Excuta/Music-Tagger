@@ -1,5 +1,7 @@
 package com.excuta.musictagger.song
 
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -9,11 +11,13 @@ import androidx.recyclerview.widget.SortedList
 import com.excuta.musictagger.R
 import kotlinx.android.synthetic.main.item_song.view.*
 import java.util.*
+import java.util.concurrent.Executors
 import kotlin.collections.ArrayList
 
-class SongAdapter(val chooseListener: (Song) -> Unit) :
+class SongAdapter(val listener: (Song) -> Unit) :
     RecyclerView.Adapter<SongAdapter.SongViewHolder>() {
-
+    private val executor = Executors.newSingleThreadExecutor()
+    private val uiHandler = Handler(Looper.getMainLooper())
     var order: Order = Order.Title
         set(value) {
             field = value
@@ -85,6 +89,22 @@ class SongAdapter(val chooseListener: (Song) -> Unit) :
         items.clear()
     }
 
+    fun update(updatedSongs: HashMap<Int, Song>) {
+        executor.execute {
+            updatedSongs.keys.forEach {
+                if (it in 0 until itemCount){
+                    fullList.removeAt(it)
+                    fullList.add(it, updatedSongs[it]!!)
+                }
+            }
+            uiHandler.post { replace(fullList) }
+        }
+    }
+
+    fun indexOf(it: Song): Int {
+        return fullList.indexOf(it)
+    }
+
     inner class SongViewHolder(view: View) : RecyclerView.ViewHolder(view) {
 
 
@@ -97,6 +117,9 @@ class SongAdapter(val chooseListener: (Song) -> Unit) :
                 artist.text = item.artist
                 album.text = item.album
                 data.text = item.data
+            }
+            itemView.setOnClickListener {
+                listener(item)
             }
         }
 
