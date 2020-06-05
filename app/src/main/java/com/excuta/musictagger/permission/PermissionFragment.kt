@@ -73,7 +73,7 @@ class PermissionFragment : Fragment() {
     }
 
     private fun createPermissionRequests(grantResults: IntArray, permissions: Array<String>):
-            ArrayList<PermissionRequest> {
+        ArrayList<PermissionRequest> {
         val permissionRequests = ArrayList<PermissionRequest>()
         grantResults.forEachIndexed { index, result ->
             if (result == PackageManager.PERMISSION_GRANTED)
