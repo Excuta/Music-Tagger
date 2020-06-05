@@ -28,11 +28,8 @@ import com.excuta.musictagger.song.Song
 import com.excuta.musictagger.song.SongAdapter
 import io.reactivex.rxjava3.core.BackpressureStrategy
 import io.reactivex.rxjava3.core.Flowable
-import jp.wasabeef.recyclerview.animators.FadeInAnimator
 import jp.wasabeef.recyclerview.animators.LandingAnimator
-import jp.wasabeef.recyclerview.animators.SlideInRightAnimator
 import kotlinx.android.synthetic.main.activity_main.*
-
 
 class MainActivity : AppCompatActivity(), LoaderManager.LoaderCallbacks<Cursor> {
 
@@ -159,7 +156,6 @@ class MainActivity : AppCompatActivity(), LoaderManager.LoaderCallbacks<Cursor> 
         }
     }
 
-
     private fun scanClickListener() {
         scanBtn.setOnClickListener {
             permissionFragment.requestPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE)
@@ -221,11 +217,11 @@ class MainActivity : AppCompatActivity(), LoaderManager.LoaderCallbacks<Cursor> 
             BackpressureStrategy.BUFFER
         ).buffer(10)
             .subscribe({
-                adapter.add(it)
-                updateCount(it)
-            }, {
-                error.text = it.toString()
-            })
+                           adapter.add(it)
+                           updateCount(it)
+                       }, {
+                           error.text = it.toString()
+                       })
     }
 
     private fun updateCount(it: MutableList<Song>) {

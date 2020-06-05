@@ -52,14 +52,11 @@ class SongAdapter(val listener: (Song) -> Unit) :
                 Order.Title -> o1!!.title.compareTo(o2!!.title)
                 Order.Artist -> o1!!.artist.compareTo(o2!!.artist)
             }
-
-
         }
 
         override fun areContentsTheSame(oldItem: Song?, newItem: Song?): Boolean {
             return Objects.equals(oldItem, newItem)
         }
-
     })
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SongViewHolder {
@@ -92,7 +89,7 @@ class SongAdapter(val listener: (Song) -> Unit) :
     fun update(updatedSongs: HashMap<Int, Song>) {
         executor.execute {
             updatedSongs.keys.forEach {
-                if (it in 0 until itemCount){
+                if (it in 0 until itemCount) {
                     fullList.removeAt(it)
                     fullList.add(it, updatedSongs[it]!!)
                 }
@@ -106,7 +103,6 @@ class SongAdapter(val listener: (Song) -> Unit) :
     }
 
     inner class SongViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-
 
         fun bind(position: Int) {
             val item = items[position]
@@ -122,7 +118,6 @@ class SongAdapter(val listener: (Song) -> Unit) :
                 listener(item)
             }
         }
-
     }
 
     enum class Order {
