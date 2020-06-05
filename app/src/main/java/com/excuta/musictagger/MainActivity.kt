@@ -11,20 +11,24 @@ import androidx.loader.content.CursorLoader
 import androidx.loader.content.Loader
 import com.excuta.musictagger.permission.Granted
 import com.excuta.musictagger.permission.PermissionFragment
+import kotlinx.android.synthetic.main.activity_main.*
 
 
 class MainActivity : AppCompatActivity(), LoaderManager.LoaderCallbacks<Cursor> {
 
     private val songs: MutableList<String> = ArrayList()
-    private val permissionFragment = PermissionFragment.Provider(supportFragmentManager).get()
+    private lateinit var permissionFragment: PermissionFragment
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        permissionFragment = PermissionFragment.Provider(supportFragmentManager).get()
         permissionFragment.permissionLiveData.observe(this, Observer {
             if (it is Granted) LoaderManager.getInstance(this).initLoader(1, null, this)
         })
-        permissionFragment.requestPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        scanBtn.setOnClickListener {
+            permissionFragment.requestPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        }
     }
 
     override fun onCreateLoader(id: Int, args: Bundle?): Loader<Cursor> {
@@ -66,4 +70,5 @@ class MainActivity : AppCompatActivity(), LoaderManager.LoaderCallbacks<Cursor> 
     override fun onLoaderReset(loader: Loader<Cursor>) {
         songs.clear()
     }
+
 }

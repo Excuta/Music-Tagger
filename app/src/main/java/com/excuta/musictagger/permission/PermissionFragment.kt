@@ -106,8 +106,7 @@ class PermissionFragment : Fragment() {
         fun get(): PermissionFragment {
             fragmentManager.findFragmentByTag(TAG)?.let { return it as PermissionFragment }
 
-            val permissionFragment =
-                PermissionFragment()
+            val permissionFragment = PermissionFragment()
 
             fragmentManager.beginTransaction().add(
                 permissionFragment,
