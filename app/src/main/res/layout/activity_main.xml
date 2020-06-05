@@ -7,13 +7,13 @@
     tools:context=".MainActivity">
 
     <TextView
-        android:layout_marginEnd="8dp"
         android:id="@+id/error"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
         android:textColor="#f00"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toStartOf="@id/scroller" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"
@@ -26,17 +26,24 @@
         android:layout_height="wrap_content"
         android:text="Scan"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/scroller"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
-        android:layout_marginEnd="8dp"
         android:id="@+id/songCount"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="15sp"
+        android:layout_marginEnd="8dp"
         android:textColor="#00f"
-        app:layout_constraintTop_toTopOf="parent"
+        android:textSize="15sp"
+        app:layout_constraintEnd_toStartOf="@id/scroller"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <View
+        android:id="@+id/scroller"
+        android:layout_width="20dp"
+        android:layout_height="match_parent"
+        android:background="#000"
         app:layout_constraintEnd_toEndOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>

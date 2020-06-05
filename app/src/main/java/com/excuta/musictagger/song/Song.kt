@@ -1,9 +1,9 @@
 package com.excuta.musictagger.song
 
 data class Song(
-    val id: String,
+    val id: Long,
     val title: String,
-    val name: String,
+    val fileName: String,
     val artist: String,
     val album: String,
     val data: String

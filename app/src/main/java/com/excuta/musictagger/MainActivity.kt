@@ -2,8 +2,13 @@ package com.excuta.musictagger
 
 import android.Manifest
 import android.database.Cursor
+import android.graphics.Color
 import android.os.Bundle
 import android.provider.MediaStore
+import android.view.Menu
+import android.view.MenuItem
+import android.view.MotionEvent
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
 import androidx.loader.app.LoaderManager
@@ -16,13 +21,13 @@ import com.excuta.musictagger.song.Song
 import com.excuta.musictagger.song.SongAdapter
 import io.reactivex.rxjava3.core.BackpressureStrategy
 import io.reactivex.rxjava3.core.Flowable
-import jp.wasabeef.recyclerview.animators.SlideInLeftAnimator
+import jp.wasabeef.recyclerview.animators.ScaleInRightAnimator
 import kotlinx.android.synthetic.main.activity_main.*
 
 
 class MainActivity : AppCompatActivity(), LoaderManager.LoaderCallbacks<Cursor> {
 
-    private val adapter = SongAdapter(){
+    private val adapter = SongAdapter() {
 
     }
     private lateinit var permissionFragment: PermissionFragment
@@ -33,12 +38,28 @@ class MainActivity : AppCompatActivity(), LoaderManager.LoaderCallbacks<Cursor> 
         initRecycler()
         initPermissionFragment()
         scanClickListener()
+        scroller.setOnTouchListener { v, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    scroller.setBackgroundColor(Color.MAGENTA)
+                }
+                MotionEvent.ACTION_UP -> {
+                    val percent = event.y / scroller.height
+                    val index = (adapter.itemCount - 1) * percent
+                    recyclerView.scrollToPosition(index.toInt())
+                    Toast.makeText(this, index.toInt().toString(), Toast.LENGTH_SHORT).show()
+                    scroller.setBackgroundColor(Color.BLACK)
+                    scroller.performClick()
+                }
+            }
+            true
+        }
     }
 
     private fun initRecycler() {
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
-        recyclerView.itemAnimator = SlideInLeftAnimator()
+        recyclerView.itemAnimator = ScaleInRightAnimator()
     }
 
 
@@ -89,7 +110,7 @@ class MainActivity : AppCompatActivity(), LoaderManager.LoaderCallbacks<Cursor> 
                     while (cursor.moveToNext()) {
                         it.onNext(
                             Song(
-                                cursor.getString(0),// id
+                                cursor.getLong(0),// id
                                 cursor.getString(2),// name
                                 cursor.getString(4),// display name
                                 cursor.getString(1),// artist
@@ -101,12 +122,13 @@ class MainActivity : AppCompatActivity(), LoaderManager.LoaderCallbacks<Cursor> 
                 }
             },
             BackpressureStrategy.BUFFER
-        ).buffer(10).subscribe({
-            adapter.add(it)
-            updateCount(it)
-        }, {
-            error.text = it.toString()
-        })
+        ).buffer(10)
+            .subscribe({
+                adapter.add(it)
+                updateCount(it)
+            }, {
+                error.text = it.toString()
+            })
     }
 
     private fun updateCount(it: MutableList<Song>) {
@@ -118,6 +140,20 @@ class MainActivity : AppCompatActivity(), LoaderManager.LoaderCallbacks<Cursor> 
 
     override fun onLoaderReset(loader: Loader<Cursor>) {
         adapter.clear()
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.sort_id -> adapter.order = SongAdapter.Order.Id
+            R.id.sort_title -> adapter.order = SongAdapter.Order.Title
+            R.id.sort_artist -> adapter.order = SongAdapter.Order.Artist
+        }
+        return true
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.menu_sort, menu)
+        return true
     }
 
 }

@@ -9,41 +9,54 @@ import androidx.recyclerview.widget.SortedList
 import com.excuta.musictagger.R
 import kotlinx.android.synthetic.main.item_song.view.*
 import java.util.*
+import kotlin.collections.ArrayList
 
 class SongAdapter(val chooseListener: (Song) -> Unit) :
     RecyclerView.Adapter<SongAdapter.SongViewHolder>() {
-    private val items = SortedList<Song>(Song::class.java, object :
-        SortedList.BatchedCallback<Song>(object : SortedList.Callback<Song>() {
-            override fun areItemsTheSame(item1: Song?, item2: Song?): Boolean {
-                return item1?.id == item2?.id
+
+    var order: Order = Order.Title
+        set(value) {
+            field = value
+            replace(fullList)
+        }
+
+    private var fullList = mutableListOf<Song>() // beacuse sorted"list" isn't a "list"
+    private val items = SortedList(Song::class.java, object : SortedList.Callback<Song>() {
+        override fun areItemsTheSame(item1: Song?, item2: Song?): Boolean {
+            return item1!!.id == item2!!.id
+        }
+
+        override fun onMoved(fromPosition: Int, toPosition: Int) {
+            notifyItemMoved(fromPosition, toPosition)
+        }
+
+        override fun onChanged(position: Int, count: Int) {
+            notifyItemRangeChanged(position, count)
+        }
+
+        override fun onInserted(position: Int, count: Int) {
+            notifyItemRangeInserted(position, count)
+        }
+
+        override fun onRemoved(position: Int, count: Int) {
+            notifyItemRangeRemoved(position, count)
+        }
+
+        override fun compare(o1: Song?, o2: Song?): Int {
+            return when (order) {
+                Order.Id -> o1!!.id.compareTo(o2!!.id)
+                Order.Title -> o1!!.title.compareTo(o2!!.title)
+                Order.Artist -> o1!!.artist.compareTo(o2!!.artist)
             }
 
-            override fun onMoved(fromPosition: Int, toPosition: Int) {
-                notifyItemMoved(fromPosition, toPosition)
-            }
 
-            override fun onChanged(position: Int, count: Int) {
-                notifyItemRangeChanged(position, count)
-            }
+        }
 
-            override fun onInserted(position: Int, count: Int) {
-                notifyItemRangeInserted(position, count)
-            }
+        override fun areContentsTheSame(oldItem: Song?, newItem: Song?): Boolean {
+            return Objects.equals(oldItem, newItem)
+        }
 
-            override fun onRemoved(position: Int, count: Int) {
-                notifyItemRangeRemoved(position, count)
-            }
-
-            override fun compare(o1: Song?, o2: Song?): Int {
-                val compareTo = o1?.name?.compareTo(o2?.name ?: "")
-                return compareTo ?: 0
-            }
-
-            override fun areContentsTheSame(oldItem: Song?, newItem: Song?): Boolean {
-                return Objects.equals(oldItem, newItem)
-            }
-
-        }){})
+    })
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SongViewHolder {
         return SongViewHolder(parent.inflate(R.layout.item_song))
@@ -57,15 +70,18 @@ class SongAdapter(val chooseListener: (Song) -> Unit) :
         holder.bind(position)
     }
 
-    fun add(list: List<Song>) {
-        items.addAll(list)
+    fun add(collection: Collection<Song>) {
+        fullList.addAll(collection)
+        items.addAll(collection)
     }
 
-    fun replace(list: List<Song>) {
-        items.replaceAll(list)
+    fun replace(collection: Collection<Song>) {
+        fullList = ArrayList(collection)
+        items.replaceAll(collection)
     }
 
     fun clear() {
+        fullList.clear()
         items.clear()
     }
 
@@ -75,15 +91,19 @@ class SongAdapter(val chooseListener: (Song) -> Unit) :
         fun bind(position: Int) {
             val item = items[position]
             with(itemView) {
-                identifier.text = item.id
+                identifier.text = item.id.toString()
                 title.text = item.title
-                name.text = item.name
+                name.text = item.fileName
                 artist.text = item.artist
                 album.text = item.album
                 data.text = item.data
             }
         }
 
+    }
+
+    enum class Order {
+        Id, Title, Artist
     }
 }
 
