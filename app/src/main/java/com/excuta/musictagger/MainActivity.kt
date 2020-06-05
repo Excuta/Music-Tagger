@@ -9,23 +9,40 @@ import androidx.lifecycle.Observer
 import androidx.loader.app.LoaderManager
 import androidx.loader.content.CursorLoader
 import androidx.loader.content.Loader
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.excuta.musictagger.permission.Granted
 import com.excuta.musictagger.permission.PermissionFragment
+import com.excuta.musictagger.song.Song
+import com.excuta.musictagger.song.SongAdapter
+import io.reactivex.rxjava3.core.BackpressureStrategy
+import io.reactivex.rxjava3.core.Flowable
+import jp.wasabeef.recyclerview.animators.SlideInLeftAnimator
 import kotlinx.android.synthetic.main.activity_main.*
 
 
 class MainActivity : AppCompatActivity(), LoaderManager.LoaderCallbacks<Cursor> {
 
-    private val songs: MutableList<String> = ArrayList()
+    private val adapter = SongAdapter(){
+
+    }
     private lateinit var permissionFragment: PermissionFragment
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        permissionFragment = PermissionFragment.Provider(supportFragmentManager).get()
-        permissionFragment.permissionLiveData.observe(this, Observer {
-            if (it is Granted) LoaderManager.getInstance(this).initLoader(1, null, this)
-        })
+        initRecycler()
+        initPermissionFragment()
+        scanClickListener()
+    }
+
+    private fun initRecycler() {
+        recyclerView.layoutManager = LinearLayoutManager(this)
+        recyclerView.adapter = adapter
+        recyclerView.itemAnimator = SlideInLeftAnimator()
+    }
+
+
+    private fun scanClickListener() {
         scanBtn.setOnClickListener {
             permissionFragment.requestPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE)
             with(scanBtn.animate()) {
@@ -34,6 +51,13 @@ class MainActivity : AppCompatActivity(), LoaderManager.LoaderCallbacks<Cursor> 
                 start()
             }
         }
+    }
+
+    private fun initPermissionFragment() {
+        permissionFragment = PermissionFragment.Provider(supportFragmentManager).get()
+        permissionFragment.permissionLiveData.observe(this, Observer {
+            if (it is Granted) LoaderManager.getInstance(this).initLoader(1, null, this)
+        })
     }
 
     override fun onCreateLoader(id: Int, args: Bundle?): Loader<Cursor> {
@@ -46,7 +70,6 @@ class MainActivity : AppCompatActivity(), LoaderManager.LoaderCallbacks<Cursor> 
             MediaStore.Audio.Media.DATA,
             MediaStore.Audio.Media.DISPLAY_NAME,
             MediaStore.Audio.Media.ALBUM
-
         )
 
         return CursorLoader(
@@ -60,20 +83,41 @@ class MainActivity : AppCompatActivity(), LoaderManager.LoaderCallbacks<Cursor> 
     }
 
     override fun onLoadFinished(loader: Loader<Cursor>, cursor: Cursor?) {
-        if (cursor != null) {
-            while (cursor.moveToNext()) {
-                songs.add(
-                    cursor.getString(0)
-                        .toString() + "||" + cursor.getString(1) + "||" + cursor.getString(2) + "||" + cursor.getString(
-                        3
-                    ) + "||" + cursor.getString(4) + "||" + cursor.getString(5)
-                )
-            }
-        }
+        Flowable.create<Song>(
+            {
+                if (cursor != null) {
+                    while (cursor.moveToNext()) {
+                        it.onNext(
+                            Song(
+                                cursor.getString(0),// id
+                                cursor.getString(2),// name
+                                cursor.getString(4),// display name
+                                cursor.getString(1),// artist
+                                cursor.getString(5),// album
+                                cursor.getString(3) // uri
+                            )
+                        )
+                    }
+                }
+            },
+            BackpressureStrategy.BUFFER
+        ).buffer(10).subscribe({
+            adapter.add(it)
+            updateCount(it)
+        }, {
+            error.text = it.toString()
+        })
+    }
+
+    private fun updateCount(it: MutableList<Song>) {
+        var count = songCount.text.toString().toIntOrNull()
+        if (count == null) count = 0
+        count += it.size
+        songCount.text = count.toString()
     }
 
     override fun onLoaderReset(loader: Loader<Cursor>) {
-        songs.clear()
+        adapter.clear()
     }
 
 }
