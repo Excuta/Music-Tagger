@@ -8,7 +8,6 @@ import android.provider.MediaStore
 import android.view.Menu
 import android.view.MenuItem
 import android.view.MotionEvent
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
 import androidx.loader.app.LoaderManager
@@ -41,14 +40,37 @@ class MainActivity : AppCompatActivity(), LoaderManager.LoaderCallbacks<Cursor> 
         scroller.setOnTouchListener { v, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
-                    scroller.setBackgroundColor(Color.MAGENTA)
+                    position.animate().run {
+                        alpha(1f)
+                        duration = 150
+                        start()
+                    }
+                    scroller.animate().run {
+                        alpha(0.5f)
+                        duration = 150
+                        start()
+                    }
                 }
-                MotionEvent.ACTION_UP -> {
+                MotionEvent.ACTION_MOVE -> {
                     val percent = event.y / scroller.height
                     val index = (adapter.itemCount - 1) * percent
-                    recyclerView.scrollToPosition(index.toInt())
-                    Toast.makeText(this, index.toInt().toString(), Toast.LENGTH_SHORT).show()
-                    scroller.setBackgroundColor(Color.BLACK)
+                    var indexInt = index.toInt()
+                    if (indexInt < 0) indexInt = 0
+                    if (indexInt > adapter.itemCount - 1) indexInt = adapter.itemCount - 1
+                    recyclerView.scrollToPosition(indexInt)
+                    position.text = indexInt.inc().toString()
+                }
+                MotionEvent.ACTION_UP -> {
+                    position.animate().run {
+                        alpha(0f)
+                        duration = 150
+                        start()
+                    }
+                    scroller.animate().run {
+                        alpha(1f)
+                        duration = 150
+                        start()
+                    }
                     scroller.performClick()
                 }
             }
