@@ -28,6 +28,11 @@ class MainActivity : AppCompatActivity(), LoaderManager.LoaderCallbacks<Cursor> 
         })
         scanBtn.setOnClickListener {
             permissionFragment.requestPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            with(scanBtn.animate()) {
+                alpha(0f)
+                duration = 200
+                start()
+            }
         }
     }
 
